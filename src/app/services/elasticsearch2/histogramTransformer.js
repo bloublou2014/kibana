@@ -4,7 +4,7 @@ define([
 	],
 	function (angular, _) {
 		'use strict';
-		var signature = /^\{\"facets\":\{\"0\":\{\"date_histogram\":\{\"field\":\".*?\",\"interval\":\".*?\"\}/;
+		var signature = /^\{\"facets\":\{\"0\":\{\"date_histogram\":\{\"key_field\":\".*?\",\"value_field\":\".*?\",\"interval\":\".*?\"\}/;
 
 		return {
 			condition: function (config) {
@@ -24,8 +24,14 @@ define([
 					var aggregations = {};
 
 					aggregations[key] = {
-						date_histogram: facet.date_histogram
+						date_histogram: {
+							interval: facet.date_histogram.interval,
+							field: facet.date_histogram.key_field
+						}
 					};
+
+					aggregations[key]["aggs"] = {};
+					aggregations[key]["aggs"][1] = {stats: {field: facet.date_histogram.value_field}};
 
 					aggregationsData.aggs[key] = {
 						filter: facet.facet_filter.fquery,
@@ -51,7 +57,11 @@ define([
 						entries: _.map(agregation[key].buckets, function (bucket) {
 							return {
 								time: bucket.key,
-								count: bucket.doc_count
+								count: bucket.doc_count,
+								total_count: bucket.doc_count,
+								max: bucket[1]["max"],
+								mean: bucket[1]["avg"],
+								min: bucket[1]["min"]
 							};
 						})
 					};
